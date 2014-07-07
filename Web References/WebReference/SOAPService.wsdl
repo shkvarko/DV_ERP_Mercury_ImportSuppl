@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://tempuri.org/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:s1="http://microsoft.com/wsdl/types/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://tempuri.org/">
+      <s:import namespace="http://microsoft.com/wsdl/types/" />
+      <s:element name="SaveNewSuppl">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="dsSuppl">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SaveNewSupplResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SaveNewSupplResult" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplState">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SupplGuid" type="s1:guid" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplStateResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="GetSupplStateResult" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplItems">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SupplGuid" type="s1:guid" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplItemsResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetSupplItemsResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetChildOrders">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SupplGuid" type="s1:guid" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetChildOrdersResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetChildOrdersResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplItemsFromInterbase">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SupplGuid" type="s1:guid" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetSupplItemsFromInterbaseResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetSupplItemsFromInterbaseResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetDepartRouting">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="DepartGuid" type="s1:guid" />
+            <s:element minOccurs="1" maxOccurs="1" name="dtBeginDate" type="s:dateTime" />
+            <s:element minOccurs="1" maxOccurs="1" name="dtEndDate" type="s:dateTime" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetDepartRoutingResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetDepartRoutingResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateChangedSuppl">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="dsChangedSupplList">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateChangedSupplResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="UpdateChangedSupplResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:element ref="s:schema" />
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://microsoft.com/wsdl/types/">
+      <s:simpleType name="guid">
+        <s:restriction base="s:string">
+          <s:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" />
+        </s:restriction>
+      </s:simpleType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="SaveNewSupplSoapIn">
+    <wsdl:part name="parameters" element="tns:SaveNewSuppl" />
+  </wsdl:message>
+  <wsdl:message name="SaveNewSupplSoapOut">
+    <wsdl:part name="parameters" element="tns:SaveNewSupplResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplStateSoapIn">
+    <wsdl:part name="parameters" element="tns:GetSupplState" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplStateSoapOut">
+    <wsdl:part name="parameters" element="tns:GetSupplStateResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplItemsSoapIn">
+    <wsdl:part name="parameters" element="tns:GetSupplItems" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplItemsSoapOut">
+    <wsdl:part name="parameters" element="tns:GetSupplItemsResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetChildOrdersSoapIn">
+    <wsdl:part name="parameters" element="tns:GetChildOrders" />
+  </wsdl:message>
+  <wsdl:message name="GetChildOrdersSoapOut">
+    <wsdl:part name="parameters" element="tns:GetChildOrdersResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplItemsFromInterbaseSoapIn">
+    <wsdl:part name="parameters" element="tns:GetSupplItemsFromInterbase" />
+  </wsdl:message>
+  <wsdl:message name="GetSupplItemsFromInterbaseSoapOut">
+    <wsdl:part name="parameters" element="tns:GetSupplItemsFromInterbaseResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetDepartRoutingSoapIn">
+    <wsdl:part name="parameters" element="tns:GetDepartRouting" />
+  </wsdl:message>
+  <wsdl:message name="GetDepartRoutingSoapOut">
+    <wsdl:part name="parameters" element="tns:GetDepartRoutingResponse" />
+  </wsdl:message>
+  <wsdl:message name="UpdateChangedSupplSoapIn">
+    <wsdl:part name="parameters" element="tns:UpdateChangedSuppl" />
+  </wsdl:message>
+  <wsdl:message name="UpdateChangedSupplSoapOut">
+    <wsdl:part name="parameters" element="tns:UpdateChangedSupplResponse" />
+  </wsdl:message>
+  <wsdl:portType name="SOAPServiceSoap">
+    <wsdl:operation name="SaveNewSuppl">
+      <wsdl:input message="tns:SaveNewSupplSoapIn" />
+      <wsdl:output message="tns:SaveNewSupplSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplState">
+      <wsdl:input message="tns:GetSupplStateSoapIn" />
+      <wsdl:output message="tns:GetSupplStateSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItems">
+      <wsdl:input message="tns:GetSupplItemsSoapIn" />
+      <wsdl:output message="tns:GetSupplItemsSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetChildOrders">
+      <wsdl:input message="tns:GetChildOrdersSoapIn" />
+      <wsdl:output message="tns:GetChildOrdersSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItemsFromInterbase">
+      <wsdl:input message="tns:GetSupplItemsFromInterbaseSoapIn" />
+      <wsdl:output message="tns:GetSupplItemsFromInterbaseSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetDepartRouting">
+      <wsdl:input message="tns:GetDepartRoutingSoapIn" />
+      <wsdl:output message="tns:GetDepartRoutingSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateChangedSuppl">
+      <wsdl:input message="tns:UpdateChangedSupplSoapIn" />
+      <wsdl:output message="tns:UpdateChangedSupplSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="SOAPServiceSoap" type="tns:SOAPServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SaveNewSuppl">
+      <soap:operation soapAction="http://tempuri.org/SaveNewSuppl" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplState">
+      <soap:operation soapAction="http://tempuri.org/GetSupplState" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItems">
+      <soap:operation soapAction="http://tempuri.org/GetSupplItems" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetChildOrders">
+      <soap:operation soapAction="http://tempuri.org/GetChildOrders" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItemsFromInterbase">
+      <soap:operation soapAction="http://tempuri.org/GetSupplItemsFromInterbase" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetDepartRouting">
+      <soap:operation soapAction="http://tempuri.org/GetDepartRouting" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateChangedSuppl">
+      <soap:operation soapAction="http://tempuri.org/UpdateChangedSuppl" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="SOAPServiceSoap12" type="tns:SOAPServiceSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SaveNewSuppl">
+      <soap12:operation soapAction="http://tempuri.org/SaveNewSuppl" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplState">
+      <soap12:operation soapAction="http://tempuri.org/GetSupplState" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItems">
+      <soap12:operation soapAction="http://tempuri.org/GetSupplItems" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetChildOrders">
+      <soap12:operation soapAction="http://tempuri.org/GetChildOrders" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSupplItemsFromInterbase">
+      <soap12:operation soapAction="http://tempuri.org/GetSupplItemsFromInterbase" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetDepartRouting">
+      <soap12:operation soapAction="http://tempuri.org/GetDepartRouting" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateChangedSuppl">
+      <soap12:operation soapAction="http://tempuri.org/UpdateChangedSuppl" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="SOAPService">
+    <wsdl:port name="SOAPServiceSoap" binding="tns:SOAPServiceSoap">
+      <soap:address location="http://192.168.7.30/PDAWebServer/SOAPService.asmx" />
+    </wsdl:port>
+    <wsdl:port name="SOAPServiceSoap12" binding="tns:SOAPServiceSoap12">
+      <soap12:address location="http://192.168.7.30/PDAWebServer/SOAPService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

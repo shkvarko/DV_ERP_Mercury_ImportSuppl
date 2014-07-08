@@ -12,7 +12,12 @@ using System.Reflection;
 using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using OfficeOpenXml;
-//using ERP_Mercury.Common;
+using ERPMercury.WebAPI.Data.Classes;
+using System.Net;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Web;
+
 
 namespace ERPMercuryImportSuppl
 {
@@ -1037,218 +1042,140 @@ namespace ERPMercuryImportSuppl
         #endregion
 
         #region Запись заказа в БД
-        /// <summary>
-        /// Запись заказа в БД
-        /// </summary>
-        private void SendSupplToDB()
+
+        private void btnSaveToDB_Click(object sender, EventArgs e)
         {
             try
             {
+                if ((txtCustomer.Text.Trim().Length == 0) || (txtCustomer.Tag == null) ||
+                    (txtDepartCode.Text.Trim().Length == 0) || (treeListSupplItms.Nodes.Count == 0) ||
+                    (txtRtt.Text.Trim().Length == 0))
+                {
+                    DevExpress.XtraEditors.XtraMessageBox.Show(this, "Проверьте, указаны ли все обязательные реквизиты заказа:\n\nКлиент\nПодразделение\nРозничная точка\nСписок продукции", "Внимание",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+
+                    return;
+                }
+
+                SendSupplToDB( dtDateDelivery.DateTime, System.Convert.ToInt32(txtCustomer.Tag),
+                    txtChildCustCode.Text.Trim(), txtDepartCode.Text.Trim(), checkBonus.Checked,
+                    txtRtt.Text.Trim(), memoDescrpn.Text.Trim(), treeListSupplItms.Nodes );
+            }
+            catch (System.Exception f)
+            {
+                SendMessageToLog("btnSaveToDB_Click. Текст ошибки: " + f.Message);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+            return;
+        }
+
+        /// <summary>
+        /// запись заказа в базу данных
+        /// </summary>
+        private void SendSupplToDB( System.DateTime DateDelivery, System.Int32 CustomerId, System.String ChildCustCode,
+           System.String DepartCode, System.Boolean IsBonus, System.String RttCode, System.String Description,
+            DevExpress.XtraTreeList.Nodes.TreeListNodes objNodesCollection )
+        {
+            try
+            {
+                if ( (CustomerId == 0) ||
+                    (DepartCode.Trim().Length == 0) || (objNodesCollection.Count == 0) ||
+                    (RttCode.Trim().Length == 0))
+                {
+                    DevExpress.XtraEditors.XtraMessageBox.Show(this, "Проверьте, указаны ли все обязательные реквизиты заказа:\n\nКлиент\nПодразделение\nРозничная точка\nСписок продукции", "Внимание",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+
+                    return;
+                }
+                
                 Cursor = Cursors.WaitCursor;
                 pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.note_small;
-                System.Guid SupplId = System.Guid.Empty;
-                if ((txtCustomer.Text != "") && (txtCustomer.Tag != null) && (txtDepartCode.Text != "") && (treeListSupplItms.Nodes.Count > 0))
+                SendMessageToLog("Идет сохранение заказа в БД...");
+                System.String strErr = System.String.Empty;
+
+                // формирование заголовка заказа
+                Order objOrder = CSupplBlankDataBaseModel.CreateOrderHeader(m_objProfile, DateDelivery, CustomerId,
+                    ChildCustCode, DepartCode, IsBonus,
+                    RttCode, Description, null, ref strErr);
+                
+                if (objOrder == null)
                 {
-                    m_dsOrders.Tables["tblSuppl"].Rows.Clear();
-                    m_dsOrders.Tables["tblSupplItems"].Rows.Clear();
+                    Cursor = Cursors.Default;
+                    pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
 
-                    System.Data.SqlClient.SqlConnection DBConnection = m_objProfile.GetDBSource();
-                    if (DBConnection == null)
-                    {
-                        SendMessageToLog("Отсутствует соединение с БД.");
-                        return;
-                    }
-                    SendMessageToLog("Идет сохранение заказа в БД...");
-                    System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand();
-                    cmd.Connection = DBConnection;
-                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                    cmd.CommandText = System.String.Format("[{0}].[dbo].[usp_ConvertSupplFromExcel]", m_objProfile.GetOptionsDllDBName());
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@CustomerId", System.Data.SqlDbType.Int));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@DepartCode", System.Data.SqlDbType.NVarChar, 3));
-
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Suppl_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Depart_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Customer_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@CustomerChild_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Rtt_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Address_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_NUM", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_MES", System.Data.SqlDbType.NVarChar, 4000));
-                    cmd.Parameters["@ERROR_MES"].Direction = System.Data.ParameterDirection.Output;
-
-
-                    cmd.Parameters["@CustomerId"].Value = System.Convert.ToInt32( txtCustomer.Tag );
-                    cmd.Parameters["@DepartCode"].Value = txtDepartCode.Text;
-
-                    if (txtChildCustCode.Text != "")
-                    {
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ChildDepartCode", System.Data.SqlDbType.NVarChar, 56));
-                        cmd.Parameters["@ChildDepartCode"].Value = txtChildCustCode.Text;
-                    }
-                    if (txtRtt.Text != "")
-                    {
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RttCode", System.Data.SqlDbType.NVarChar, 56));
-                        cmd.Parameters["@RttCode"].Value = txtRtt.Text;
-                    }
-                    cmd.ExecuteNonQuery();
-                    System.Int32 iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                    if (iRes == 0)
-                    {
-                        if ((cmd.Parameters["@Depart_Guid"].Value != System.DBNull.Value) &&
-                            (cmd.Parameters["@Customer_Guid"].Value != System.DBNull.Value))
-                        {
-                            System.Data.DataRow newRow = m_dsOrders.Tables["tblSuppl"].NewRow();
-                            SupplId = (System.Guid)cmd.Parameters["@Suppl_Guid"].Value;
-                            newRow["Suppl_Guid"] = SupplId;
-                            newRow["Customer_Guid"] = (System.Guid)cmd.Parameters["@Customer_Guid"].Value;
-                            newRow["Depart_Guid"] = (System.Guid)cmd.Parameters["@Depart_Guid"].Value;
-                            newRow["Suppl_Num"] = 0;
-                            newRow["Suppl_BeginDate"] = System.DateTime.Today;
-                            newRow["Suppl_State"] = iSupplState;
-                            newRow["Suppl_Bonus"] = ( ( checkBonus.Checked == true ) ? 1 : 0 );
-                            newRow["Suppl_Note"] = (memoDescrpn.Text == "") ? "-" : memoDescrpn.Text;
-                            newRow["SupplType_Guid"] = System.DBNull.Value;
-                            newRow["Suppl_Version"] = System.DBNull.Value;
-                            newRow["Suppl_DeliveryDate"] = dtDateDelivery.DateTime;
-
-                            if ((cmd.Parameters["@Rtt_Guid"].Value != System.DBNull.Value) &&
-                                (cmd.Parameters["@Address_Guid"].Value != System.DBNull.Value))
-                            {
-
-                                newRow["Rtt_Guid"] = (System.Guid)cmd.Parameters["@Rtt_Guid"].Value;
-                                newRow["Address_Guid"] = (System.Guid)cmd.Parameters["@Address_Guid"].Value;
-                            }
-                            if (txtChildCustCode.Text != "" )
-                            {
-                                 newRow["SupplType_Guid"] = new System.Guid( "9FD32373-ABB4-4C6C-8225-B3BF88F22AB0" );
-                            }
-                            m_dsOrders.Tables["tblSuppl"].Rows.Add(newRow);
-
-                            // теперь обработаем содержимое заказа
-                            cmd.Parameters.Clear();
-                            cmd.CommandText = System.String.Format("[{0}].[dbo].[usp_ConvertSupplItmsFromExcel]", m_objProfile.GetOptionsDllDBName());
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@PartsId", System.Data.SqlDbType.Int));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@PartsQty", System.Data.SqlDbType.Int));
-
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SupplItms_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Parts_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Measure_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_OrderQty", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_Quatity", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_Discount", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_NUM", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_MES", System.Data.SqlDbType.NVarChar, 4000));
-                            cmd.Parameters["@ERROR_MES"].Direction = System.Data.ParameterDirection.Output;
-                            System.Data.DataRow newRowItem = null;
-
-                            foreach (DevExpress.XtraTreeList.Nodes.TreeListNode objNode in treeListSupplItms.Nodes)
-                            {
-                                if (objNode.Tag == null) { continue; }
-                                cmd.Parameters["@PartsId"].Value = System.Convert.ToInt32(objNode.Tag);
-                                cmd.Parameters["@PartsQty"].Value = System.Convert.ToInt32(objNode.GetValue(colOrderQty));
-                                cmd.ExecuteNonQuery();
-                                iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                                if (iRes == 0)
-                                {
-                                    newRowItem = m_dsOrders.Tables["tblSupplItems"].NewRow();
-                                    newRowItem["SupplItem_Guid"] = (System.Guid)cmd.Parameters["@SupplItms_Guid"].Value;
-                                    newRowItem["Suppl_Guid"] = SupplId;
-                                    newRowItem["Parts_Guid"] = (System.Guid)cmd.Parameters["@Parts_Guid"].Value;
-                                    newRowItem["Measure_Guid"] = (System.Guid)cmd.Parameters["@Measure_Guid"].Value;
-                                    newRowItem["SupplItem_OrderQuantity"] = System.Convert.ToInt32(cmd.Parameters["@SplItms_OrderQty"].Value);
-                                    newRowItem["SupplItem_Quantity"] = System.Convert.ToInt32(cmd.Parameters["@SplItms_Quatity"].Value);
-
-                                    m_dsOrders.Tables["tblSupplItems"].Rows.Add(newRowItem);
-                                }
-                                else
-                                {
-                                    SendMessageToLog((System.String)objNode.GetValue(colPartaName) + " " + (System.String)cmd.Parameters["@ERROR_MES"].Value);
-                                }
-                            }
-
-                            m_dsOrders.AcceptChanges();         
-               
-                            //теперь попробуем воспользоваться web сервисом
-                            cmd.Parameters.Clear();
-                            cmd.CommandText = System.String.Format("[{0}].[dbo].[usp_GetWebServiceName]", m_objProfile.GetOptionsDllDBName());
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                            cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SoapUrl", System.Data.SqlDbType.NVarChar, 400));
-                            cmd.Parameters["@SoapUrl"].Direction = System.Data.ParameterDirection.Output;
-                            cmd.ExecuteNonQuery();
-                            iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                            System.Int32 iRetCode = -1;
-
-                            if (iRes == 0)
-                            {
-                                SendMessageToLog("web сервис: " + (System.String)cmd.Parameters["@SoapUrl"].Value);
-                                SendMessageToLog("идет вызов web сервиса");
-                                ERPMercuryImportSuppl.WebReference.SOAPService objSrvGprs = null;
-                                try
-                                {
-                                    SendMessageToLog("v-iis01.SOAPService objSrvGprs = new SalesManager.v-iis01.SOAPService()");
-                                    objSrvGprs = new ERPMercuryImportSuppl.WebReference.SOAPService(); // .srvGPRS();
-
-                                    SendMessageToLog("объект \"сервис\" создан");
-
-                                    objSrvGprs.Url = (System.String)cmd.Parameters["@SoapUrl"].Value;
-                                    
-                                    SendMessageToLog("сервису присвоен адрес: " + objSrvGprs.Url);
-
-                                    SendMessageToLog("вызывается метод objSrvGprs.SaveNewSuppl");
-
-                                    SendMessageToLog("количество таблиц в наборе" + m_dsOrders.Tables.Count.ToString());
-                                    SendMessageToLog("количество записей в таблице tblSuppl: " + m_dsOrders.Tables["tblSuppl"].Rows.Count.ToString());
-                                    SendMessageToLog("количество записей в таблице tblSupplItems: " + m_dsOrders.Tables["tblSupplItems"].Rows.Count.ToString());
-
-                                    iRetCode = objSrvGprs.SaveNewSuppl(m_dsOrders);
-
-                                    SendMessageToLog("вызов метода objSrvGprs.SaveNewSuppl завершен");
-                                }
-                                catch (System.Exception ferr)
-                                {
-                                    DevExpress.XtraEditors.XtraMessageBox.Show(this, "вызов сервиса. Текст ошибки: " + ferr.Message, "Информация",
-                                      System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-
-                                    SendMessageToLog("вызов сервиса. Текст ошибки: " + ferr.Message);
-                                }
-
-                                //objSrvGprs.Url = "http://192.168.7.27/MercuryPDA/SOAPService.asmx";
-
-                                if (iRetCode == 0)
-                                {
-                                    SendMessageToLog("заказ успешно обработан.");
-                                    DevExpress.XtraEditors.XtraMessageBox.Show(this, "Заказ успешно обработан.", "Информация",
-                                      System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-                                    pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.ok_16;
-                                }
-                                else
-                                {
-                                    SendMessageToLog("ошибка передачи информации в БД. Код ошибки: " + iRetCode.ToString());
-                                    DevExpress.XtraEditors.XtraMessageBox.Show(this, "Ошибка передачи информации в БД.", "Ошибка",
-                                      System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                                    pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
-                                }
-                                objSrvGprs = null;
-                            }
-                            else
-                            {
-                                SendMessageToLog("ошибка передачи информации в БД.");
-                                DevExpress.XtraEditors.XtraMessageBox.Show(this, "Ошибка передачи информации в БД. Не удалось получить адрес web сервиса.", "Ошибка",
-                                  System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                                pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        SendMessageToLog(( System.String )cmd.Parameters["@ERROR_MES"].Value);
-                    }
-
-                    cmd = null;
-                    DBConnection.Close();
+                    DevExpress.XtraEditors.XtraMessageBox.Show(this, ("Не удалось сформировать заголовок заказа.\n" + strErr ), "Внимание",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                    
+                    return;
                 }
+
+                // приложение к заказу
+                List<OrderItem> objOrderItemList = CSupplBlankDataBaseModel.CreateOrderTablePart( 
+                    ( ( m_enFormOpenMode == enumFormOpenMode.ImportSupplFromBlank ) ? colOrderQty : colImportSupplQuantity ),
+                    m_objProfile, objNodesCollection, null, ref strErr);
+                if ((objOrderItemList == null) || (objOrderItemList.Count == 0))
+                {
+                    Cursor = Cursors.Default;
+                    pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
+
+                    DevExpress.XtraEditors.XtraMessageBox.Show(this, ("Не удалось сформировать список товаров для заказа.\n" + strErr ), "Внимание",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                    
+                    return;
+                }
+
+                objOrder.items = objOrderItemList;
+
+                // путь к web-сервису
+                System.String strWebServiceName = CSupplBlankDataBaseModel.GetWebServiceName( m_objProfile, null, ref strErr);
+                if (strWebServiceName.Length == 0)
+                {
+                    Cursor = Cursors.Default;
+                    pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
+
+                    DevExpress.XtraEditors.XtraMessageBox.Show(this, ("Не удалось получить строку подключения к web-service.\n" + strErr), "Внимание",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+
+                    return;
+                }
+
+
+                SendMessageToLog("старт сохранения заказа в систему");
+
+                try
+                {
+                    HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(strWebServiceName);
+                    httpWebRequest.ContentType = "text/json";
+                    httpWebRequest.Method = "POST";
+                    SendMessageToLog(String.Format("сервису присвоен адрес: {0}", httpWebRequest.RequestUri));
+
+                    using (StreamWriter streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                    {
+                        var json = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(objOrder);
+                        
+                        streamWriter.Write(json);
+                        streamWriter.Flush();
+                        streamWriter.Close();
+                    }
+                    HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                        SendMessageToLog(String.Format("Результат добавления нового заказа: {0}", result));
+
+                        DevExpress.XtraEditors.XtraMessageBox.Show(this, String.Format("Результат добавления нового заказа: {0}", result), "Информация",
+                            System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                        pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.ok_16;
+                    }
+                }
+                catch (System.Exception f)
+                {
+                    SendMessageToLog(String.Format("Ошибка при добавлении нoвого заказа для торг.представителя {0}", f.Message));
+                }
+
             }
             catch (System.Exception f)
             {
@@ -1261,22 +1188,7 @@ namespace ERPMercuryImportSuppl
             return;
         }
 
-        private void btnSaveToDB_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                SendSupplToDB();
-            }
-            catch (System.Exception f)
-            {
-                SendMessageToLog("btnSaveToDB_Click. Текст ошибки: " + f.Message);
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
-            }
-            return;
-        }
+
         #endregion
 
         #region Импорт заказа из файла со списком штрих-кодов и количеством
@@ -1517,234 +1429,6 @@ namespace ERPMercuryImportSuppl
         #endregion
 
         #region Запись заказа в БД
-        /// <summary>
-        /// Запись заказа в БД
-        /// </summary>
-        /// <param name="CustomerId">УИ клиента (InterBase)</param>
-        /// <param name="DepartCode">код подразделения</param>
-        /// <param name="ChildDepartCode">код дочернего клиента</param>
-        /// <param name="RttCode">код РТТ</param>
-        /// <param name="Suppl_Note">примечание к заказу</param>
-        /// <param name="Suppl_Bonus">признак "Бонус"</param>
-        /// <param name="Suppl_DeliveryDate">дата доставки</param>
-        private void SendSupplToDB(System.Int32 CustomerId, System.String DepartCode, System.String ChildDepartCode, System.String RttCode,
-            System.String Suppl_Note, System.Boolean Suppl_Bonus, System.DateTime Suppl_DeliveryDate)
-        {
-            try
-            {
-                Cursor = Cursors.WaitCursor;
-                System.Guid SupplId = System.Guid.Empty;
-
-                m_dsOrders.Tables["tblSuppl"].Rows.Clear();
-                m_dsOrders.Tables["tblSupplItems"].Rows.Clear();
-
-                System.Data.SqlClient.SqlConnection DBConnection = m_objProfile.GetDBSource();
-                if (DBConnection == null)
-                {
-                    SendMessageToLog("Отсутствует соединение с БД.");
-                    return;
-                }
-                SendMessageToLog("Идет сохранение заказа в БД...");
-                System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand();
-                cmd.Connection = DBConnection;
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                cmd.CommandText = System.String.Format("[{0}].[dbo].[sp_ConvertSupplFromExcel]", m_objProfile.GetOptionsDllDBName());
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@CustomerId", System.Data.SqlDbType.Int));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@DepartCode", System.Data.SqlDbType.NVarChar, 3));
-
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Suppl_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Depart_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Customer_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@CustomerChild_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Rtt_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Address_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_NUM", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_MES", System.Data.SqlDbType.NVarChar, 4000));
-                cmd.Parameters["@ERROR_MES"].Direction = System.Data.ParameterDirection.Output;
-
-
-                cmd.Parameters["@CustomerId"].Value = CustomerId;
-                cmd.Parameters["@DepartCode"].Value = DepartCode;
-
-                if (ChildDepartCode != "")
-                {
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ChildDepartCode", System.Data.SqlDbType.NVarChar, 56));
-                    cmd.Parameters["@ChildDepartCode"].Value = ChildDepartCode;
-                }
-                if (RttCode != "")
-                {
-                    cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RttCode", System.Data.SqlDbType.NVarChar, 56));
-                    cmd.Parameters["@RttCode"].Value = RttCode;
-                }
-                cmd.ExecuteNonQuery();
-                System.Int32 iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                if (iRes == 0)
-                {
-                    if ((cmd.Parameters["@Depart_Guid"].Value != System.DBNull.Value) &&
-                        (cmd.Parameters["@Customer_Guid"].Value != System.DBNull.Value))
-                    {
-                        System.Data.DataRow newRow = m_dsOrders.Tables["tblSuppl"].NewRow();
-                        SupplId = (System.Guid)cmd.Parameters["@Suppl_Guid"].Value;
-                        newRow["Suppl_Guid"] = SupplId;
-                        newRow["Customer_Guid"] = (System.Guid)cmd.Parameters["@Customer_Guid"].Value;
-                        newRow["Depart_Guid"] = (System.Guid)cmd.Parameters["@Depart_Guid"].Value;
-                        newRow["Suppl_Num"] = 0;
-                        newRow["Suppl_BeginDate"] = System.DateTime.Today;
-                        newRow["Suppl_State"] = iSupplState;
-                        newRow["Suppl_Bonus"] = ((Suppl_Bonus == true) ? 1 : 0);
-                        newRow["Suppl_Note"] = Suppl_Note;
-                        newRow["SupplType_Guid"] = System.DBNull.Value;
-                        newRow["Suppl_Version"] = System.DBNull.Value;
-                        newRow["Suppl_DeliveryDate"] = Suppl_DeliveryDate;
-
-                        if ((cmd.Parameters["@Rtt_Guid"].Value != System.DBNull.Value) &&
-                            (cmd.Parameters["@Address_Guid"].Value != System.DBNull.Value))
-                        {
-
-                            newRow["Rtt_Guid"] = (System.Guid)cmd.Parameters["@Rtt_Guid"].Value;
-                            newRow["Address_Guid"] = (System.Guid)cmd.Parameters["@Address_Guid"].Value;
-                        }
-                        if (txtChildCustCode.Text != "")
-                        {
-                            newRow["SupplType_Guid"] = new System.Guid("9FD32373-ABB4-4C6C-8225-B3BF88F22AB0");
-                        }
-                        m_dsOrders.Tables["tblSuppl"].Rows.Add(newRow);
-
-                        // теперь обработаем содержимое заказа
-                        cmd.Parameters.Clear();
-                        cmd.CommandText = System.String.Format("[{0}].[dbo].[sp_ConvertSupplItmsFromExcel]", m_objProfile.GetOptionsDllDBName());
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@PartsId", System.Data.SqlDbType.Int));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@PartsQty", System.Data.SqlDbType.Int));
-
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SupplItms_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Parts_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@Measure_Guid", System.Data.SqlDbType.UniqueIdentifier, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_OrderQty", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_Quatity", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SplItms_Discount", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_NUM", System.Data.SqlDbType.Int, 8, System.Data.ParameterDirection.Output, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@ERROR_MES", System.Data.SqlDbType.NVarChar, 4000));
-                        cmd.Parameters["@ERROR_MES"].Direction = System.Data.ParameterDirection.Output;
-                        System.Data.DataRow newRowItem = null;
-
-                        foreach (DevExpress.XtraTreeList.Nodes.TreeListNode objNode in treeListImportSupplProducts.Nodes)
-                        {
-                            if (objNode.Tag == null) { continue; }
-                            if (System.Convert.ToInt32(objNode.GetValue(colImportSupplQuantity)) == 0) { continue; }
-
-                            cmd.Parameters["@PartsId"].Value = System.Convert.ToInt32(objNode.Tag);
-                            cmd.Parameters["@PartsQty"].Value = System.Convert.ToInt32(objNode.GetValue(colImportSupplQuantity));
-                            cmd.ExecuteNonQuery();
-                            iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                            if (iRes == 0)
-                            {
-                                newRowItem = m_dsOrders.Tables["tblSupplItems"].NewRow();
-                                newRowItem["SupplItem_Guid"] = (System.Guid)cmd.Parameters["@SupplItms_Guid"].Value;
-                                newRowItem["Suppl_Guid"] = SupplId;
-                                newRowItem["Parts_Guid"] = (System.Guid)cmd.Parameters["@Parts_Guid"].Value;
-                                newRowItem["Measure_Guid"] = (System.Guid)cmd.Parameters["@Measure_Guid"].Value;
-                                newRowItem["SupplItem_OrderQuantity"] = System.Convert.ToInt32(cmd.Parameters["@SplItms_OrderQty"].Value);
-                                newRowItem["SupplItem_Quantity"] = System.Convert.ToInt32(cmd.Parameters["@SplItms_Quatity"].Value);
-
-                                m_dsOrders.Tables["tblSupplItems"].Rows.Add(newRowItem);
-                            }
-                            else
-                            {
-                                SendMessageToLog((System.String)objNode.GetValue(colPartaName) + " " + (System.String)cmd.Parameters["@ERROR_MES"].Value);
-                            }
-                        }
-
-                        m_dsOrders.AcceptChanges();
-
-                        //теперь попробуем воспользоваться web сервисом
-                        cmd.Parameters.Clear();
-                        cmd.CommandText = System.String.Format("[{0}].[dbo].[sp_GetWebServiceName]", m_objProfile.GetOptionsDllDBName());
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@RETURN_VALUE", System.Data.SqlDbType.Int, 4, System.Data.ParameterDirection.ReturnValue, false, ((System.Byte)(0)), ((System.Byte)(0)), "", System.Data.DataRowVersion.Current, null));
-                        cmd.Parameters.Add(new System.Data.SqlClient.SqlParameter("@SoapUrl", System.Data.SqlDbType.NVarChar, 400));
-                        cmd.Parameters["@SoapUrl"].Direction = System.Data.ParameterDirection.Output;
-                        cmd.ExecuteNonQuery();
-                        iRes = (System.Int32)cmd.Parameters["@RETURN_VALUE"].Value;
-                        System.Int32 iRetCode = -1;
-
-                        if (iRes == 0)
-                        {
-                            SendMessageToLog("web сервис: " + (System.String)cmd.Parameters["@SoapUrl"].Value);
-                            SendMessageToLog("идет вызов web сервиса");
-                            ERPMercuryImportSuppl.WebReference.SOAPService objSrvGprs = null;
-                            try
-                            {
-                                SendMessageToLog("v-iis01.SOAPService objSrvGprs = new SalesManager.v-iis01.SOAPService()");
-                                objSrvGprs = new ERPMercuryImportSuppl.WebReference.SOAPService(); // .srvGPRS();
-
-                                SendMessageToLog("объект \"сервис\" создан");
-
-                                objSrvGprs.Url = (System.String)cmd.Parameters["@SoapUrl"].Value;
-
-                                SendMessageToLog("сервису присвоен адрес: " + objSrvGprs.Url);
-
-                                SendMessageToLog("вызывается метод objSrvGprs.SaveNewSuppl");
-
-                                SendMessageToLog("количество таблиц в наборе" + m_dsOrders.Tables.Count.ToString());
-                                SendMessageToLog("количество записей в таблице tblSuppl: " + m_dsOrders.Tables["tblSuppl"].Rows.Count.ToString());
-                                SendMessageToLog("количество записей в таблице tblSupplItems: " + m_dsOrders.Tables["tblSupplItems"].Rows.Count.ToString());
-
-                                iRetCode = objSrvGprs.SaveNewSuppl(m_dsOrders);
-
-                                SendMessageToLog("вызов метода objSrvGprs.SaveNewSuppl завершен");
-                            }
-                            catch (System.Exception ferr)
-                            {
-                                DevExpress.XtraEditors.XtraMessageBox.Show(this, "вызов сервиса. Текст ошибки: " + ferr.Message, "Информация",
-                                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-
-                                SendMessageToLog("вызов сервиса. Текст ошибки: " + ferr.Message);
-                            }
-
-                            //objSrvGprs.Url = "http://192.168.7.27/MercuryPDA/SOAPService.asmx";
-
-                            if (iRetCode == 0)
-                            {
-                                SendMessageToLog("заказ успешно обработан.");
-                                DevExpress.XtraEditors.XtraMessageBox.Show(this, "Заказ успешно обработан.", "Информация",
-                                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-                            }
-                            else
-                            {
-                                SendMessageToLog("ошибка передачи информации в БД. Код ошибки: " + iRetCode.ToString());
-                                DevExpress.XtraEditors.XtraMessageBox.Show(this, "Ошибка передачи информации в БД.", "Ошибка",
-                                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                            }
-                            objSrvGprs = null;
-                        }
-                        else
-                        {
-                            SendMessageToLog("ошибка передачи информации в БД.");
-                            DevExpress.XtraEditors.XtraMessageBox.Show(this, "Ошибка передачи информации в БД. Не удалось получить адрес web сервиса.", "Ошибка",
-                                System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                            pictureEdit1.Image = ERPMercuryImportSuppl.Properties.Resources.warning;
-                        }
-                    }
-                }
-                else
-                {
-                    SendMessageToLog((System.String)cmd.Parameters["@ERROR_MES"].Value);
-                }
-
-                cmd = null;
-                DBConnection.Close();
-            }
-            catch (System.Exception f)
-            {
-                SendMessageToLog("SendSupplToDB. Текст ошибки: " + f.Message);
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
-            }
-            return;
-        }
 
         private void SaveSupplInDB()
         {
@@ -1798,7 +1482,9 @@ namespace ERPMercuryImportSuppl
                     return;
                 }
 
-                SendSupplToDB(CustomerId, DepartCode, ChildDepartCode, RttCode,  Suppl_Note, Suppl_Bonus, Suppl_DeliveryDate);
+                SendSupplToDB( Suppl_DeliveryDate, CustomerId,
+                   ChildDepartCode, DepartCode, Suppl_Bonus,
+                   RttCode, Suppl_Note, treeListImportSupplProducts.Nodes );
             }
             catch (System.Exception f)
             {

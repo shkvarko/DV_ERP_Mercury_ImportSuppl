@@ -136,6 +136,7 @@
             this.dataColumn23 = new System.Data.DataColumn();
             this.dataColumn35 = new System.Data.DataColumn();
             this.dataColumn36 = new System.Data.DataColumn();
+            this.simpleButton2 = new DevExpress.XtraEditors.SimpleButton();
             this.tableLayoutPanelDepart.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.cboxChildCust.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboxCustomer.Properties)).BeginInit();
@@ -646,12 +647,14 @@
             // 
             // tableLayoutPanel2
             // 
-            this.tableLayoutPanel2.ColumnCount = 3;
+            this.tableLayoutPanel2.ColumnCount = 4;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 89F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 102F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 92F));
             this.tableLayoutPanel2.Controls.Add(this.btnOpenFile, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnSaveToDB, 2, 0);
+            this.tableLayoutPanel2.Controls.Add(this.simpleButton2, 3, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 572);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
@@ -666,9 +669,10 @@
             // 
             this.btnOpenFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btnOpenFile.Image = global::ERPMercuryImportSuppl.Properties.Resources.files_add_16;
-            this.btnOpenFile.Location = new System.Drawing.Point(3, 4);
+            this.btnOpenFile.Location = new System.Drawing.Point(1, 5);
+            this.btnOpenFile.Margin = new System.Windows.Forms.Padding(1);
             this.btnOpenFile.Name = "btnOpenFile";
-            this.btnOpenFile.Size = new System.Drawing.Size(75, 23);
+            this.btnOpenFile.Size = new System.Drawing.Size(87, 24);
             this.btnOpenFile.TabIndex = 0;
             this.btnOpenFile.Text = "Файл";
             this.btnOpenFile.ToolTip = "Открыть файл";
@@ -680,9 +684,10 @@
             // 
             this.btnSaveToDB.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSaveToDB.Image = global::ERPMercuryImportSuppl.Properties.Resources.disk_blue_ok;
-            this.btnSaveToDB.Location = new System.Drawing.Point(782, 4);
+            this.btnSaveToDB.Location = new System.Drawing.Point(690, 4);
+            this.btnSaveToDB.Margin = new System.Windows.Forms.Padding(1);
             this.btnSaveToDB.Name = "btnSaveToDB";
-            this.btnSaveToDB.Size = new System.Drawing.Size(88, 23);
+            this.btnSaveToDB.Size = new System.Drawing.Size(90, 25);
             this.btnSaveToDB.TabIndex = 1;
             this.btnSaveToDB.Text = "Сохранить";
             this.btnSaveToDB.ToolTip = "Сохранение заказа в БД";
@@ -1365,6 +1370,21 @@
             this.dataColumn36.ColumnName = "SupplItem_Quantity";
             this.dataColumn36.DataType = typeof(decimal);
             // 
+            // simpleButton2
+            // 
+            this.simpleButton2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.simpleButton2.Image = global::ERPMercuryImportSuppl.Properties.Resources.close_16;
+            this.simpleButton2.Location = new System.Drawing.Point(782, 4);
+            this.simpleButton2.Margin = new System.Windows.Forms.Padding(1);
+            this.simpleButton2.Name = "simpleButton2";
+            this.simpleButton2.Size = new System.Drawing.Size(90, 25);
+            this.simpleButton2.TabIndex = 2;
+            this.simpleButton2.Text = "Выход";
+            this.simpleButton2.ToolTip = "Выход";
+            this.simpleButton2.ToolTipController = this.toolTipController;
+            this.simpleButton2.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            this.simpleButton2.Click += new System.EventHandler(this.btnClose_Click);
+            // 
             // frmSupplBlank
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1542,5 +1562,6 @@
         private DevExpress.XtraEditors.SimpleButton simpleButton1;
         private DevExpress.XtraEditors.SimpleButton btnCreateBlank;
         private DevExpress.XtraEditors.CheckEdit checkStockQty;
+        private DevExpress.XtraEditors.SimpleButton simpleButton2;
     }
 }
